@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Videy Downloader – Wanz Tools</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Videy Downloader</h1>
+      <p class="sub">Tempel URL <code>videy.co</code> → ambil link unduhan langsung.</p>
+    </header>
+
+    <section class="card">
+      <label for="url">Link Videy</label>
+      <div class="row">
+        <input id="url" type="url" placeholder="https://videy.co/xxxx" autocomplete="on" />
+        <button id="go">Get Link</button>
+      </div>
+      <small class="muted">Hanya untuk penggunaan yang sah & konten milik sendiri.</small>
+
+      <div id="result" class="result hidden"></div>
+    </section>
+
+    <footer>
+      <span>© Wanz Official</span>
+    </footer>
+  </main>
+
+  <div id="popup" class="popup hidden">
+    <div class="popup-card">
+      <div class="popup-title">Oops</div>
+      <div id="popup-msg" class="popup-msg"></div>
+      <button id="popup-close">Tutup</button>
+    </div>
+  </div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+
+function showPopup(msg) {
+  $("#popup-msg").textContent = msg;
+  $("#popup").classList.remove("hidden");
+  requestAnimationFrame(() => $("#popup").classList.add("show"));
+}
+function hidePopup() {
+  $("#popup").classList.remove("show");
+  setTimeout(() => $("#popup").classList.add("hidden"), 200);
+}
+
+$("#popup-close").addEventListener("click", hidePopup);
+$("#popup").addEventListener("click", (e)=>{ if(e.target.id==="popup") hidePopup(); });
+
+$("#go").addEventListener("click", async () => {
+  const url = $("#url").value.trim();
+  if (!url) return showPopup("Masukkan URL Videy dulu ya.");
+  try {
+    const r = await fetch(`/api/videy?url=${encodeURIComponent(url)}`);
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || "Gagal memproses URL");
+
+    const container = $("#result");
+    container.classList.remove("hidden");
+    container.innerHTML = `
+      <div class="grid">
+        <div>
+          <div class="label">Jenis</div>
+          <div>${data.type.toUpperCase()}</div>
+        </div>
+        <div>
+          <div class="label">Filename</div>
+          <div>${data.filename || "-"}</div>
+        </div>
+        <div>
+          <div class="label">Size</div>
+          <div>${data.sizeBytes ? (Number(data.sizeBytes)/1048576).toFixed(2) + " MB" : "-"}</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="btn primary" href="${data.proxyUrl}" rel="noopener">Download via Proxy</a>
+        <a class="btn" href="${data.rawUrl}" target="_blank" rel="noopener">Buka Direct URL</a>
+      </div>
+
+      <details>
+        <summary>Detail link yang ditemukan</summary>
+        <pre>${JSON.stringify(data.found, null, 2)}</pre>
+      </details>
+    `;
+  } catch (e) {
+    showPopup(e.message || String(e));
+  }
+});
+
+$("#url").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") $("#go").click();
+});
+</script>
+</body>
+  </html>
